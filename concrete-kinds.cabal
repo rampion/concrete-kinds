@@ -26,6 +26,7 @@ library
                      , Data.Iso
                      , Kind.Concrete.Product
                      , Kind.Concrete.Sum
+                     , Kind.Concrete.Unit
   -- other-modules:
   -- other-extensions:
   build-depends:       base ^>=4.12.0.0
