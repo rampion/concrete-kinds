@@ -28,6 +28,7 @@ library
                      , Kind.Concrete.Sum
                      , Kind.Concrete.Unit
                      , Kind.Concrete.Void
+                     , Kind.Concrete.Identity
   -- other-modules:
   -- other-extensions:
   build-depends:       base ^>=4.12.0.0
