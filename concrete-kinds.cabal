@@ -23,6 +23,7 @@ library
                      , Control.Category.Choice
                      , Control.Category.Cocartesian
                      , Control.Category.Distributive
+                     , Control.Category.Exponential
                      , Data.Iso
                      , Kind.Concrete.Product
                      , Kind.Concrete.Sum
