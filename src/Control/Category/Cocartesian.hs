@@ -13,3 +13,8 @@ instance Cocartesian (->) where
   inr = Right
   (|||) = either
 
+coswap :: Cocartesian m => Coproduct m a b `m` Coproduct m b a
+coswap = inr ||| inl
+
+codiag :: Cocartesian m => Coproduct m a a `m` a
+codiag = id ||| id
