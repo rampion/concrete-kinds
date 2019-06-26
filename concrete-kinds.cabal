@@ -36,6 +36,7 @@ library
                      , Kind.Concrete.Natural
                      , Kind.Concrete.Exp
                      , Kind.Concrete.Compose
+                     , Kind.Concrete.Fix
   -- other-modules:
   -- other-extensions:
   build-depends:       base ^>=4.12.0.0
