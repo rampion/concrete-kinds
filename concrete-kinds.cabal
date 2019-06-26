@@ -24,6 +24,7 @@ library
                      , Control.Category.Cocartesian
                      , Control.Category.Distributive
                      , Control.Category.Closed
+                     , Control.Category.Coercible
                      , Data.Iso
                      , Data.Dual
                      , Kind.Concrete.Product

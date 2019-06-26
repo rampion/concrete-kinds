@@ -7,6 +7,7 @@ import Control.Category.Strong
 import Control.Category.Cartesian
 import Control.Category.Choice
 import Control.Category.Cocartesian
+import Control.Category.Coercible
 import Prelude hiding (id, (.), fst, snd)
 
 data Iso m a b = Iso { to :: m a b, from :: m b a }
@@ -44,3 +45,6 @@ instance Choice m => Choice (Iso m) where
 
 _Sum :: Cocartesian m => (a `m` c, b `m` c) <-> (Coproduct m a b `m` c)
 _Sum = Iso (uncurry (|||)) ((.inl) &&& (.inr))
+
+instance Coercible m => Coercible (Iso m) where
+  coerce = Iso coerce coerce

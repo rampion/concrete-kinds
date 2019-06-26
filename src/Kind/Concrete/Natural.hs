@@ -9,11 +9,16 @@
 module Kind.Concrete.Natural where
 import Prelude hiding ((.), id)
 import Control.Category
+import Control.Category.Coercible
+import Data.Iso
 
 type family (~>) = (m :: k -> k -> *) | m -> k where
   (~>) = (->)
   (~>) = Natural_
 infixr 0 ~>
+
+type (<~>) = Iso (~>)
+infix 0 <~>
 
 newtype Natural_ (a :: j -> k) (b :: j -> k) 
       = Natural_ { runNatural_ :: forall (x :: j). a x ~> b x }
@@ -28,7 +33,12 @@ instance Category (Natural_ ::      (j -> k) ->      (j -> k) -> *) =>
   id = Natural_ id
   Natural_ f . Natural_ g = Natural_ (f . g)
 
--- pattern synonyms if you don't
+instance Coercible (Natural_ :: (j -> *) -> (j -> *) -> *) where
+  coerce = Natural_ coerce
+
+instance Coercible (Natural_ ::      (j -> k) ->      (j -> k) -> *) =>
+         Coercible (Natural_ :: (i -> j -> k) -> (i -> j -> k) -> *) where
+  coerce = Natural_ coerce
 
 -- for completeness
 pattern Natural0 :: (a -> b) -> (a ~> b)
