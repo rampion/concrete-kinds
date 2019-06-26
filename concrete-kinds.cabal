@@ -25,6 +25,7 @@ library
                      , Control.Category.Distributive
                      , Control.Category.Closed
                      , Data.Iso
+                     , Data.Dual
                      , Kind.Concrete.Product
                      , Kind.Concrete.Sum
                      , Kind.Concrete.Unit
