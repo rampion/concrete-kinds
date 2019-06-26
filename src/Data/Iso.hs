@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RankNTypes #-}
 module Data.Iso where
 import Control.Category
 import Control.Category.Strong
@@ -10,15 +11,21 @@ import Prelude hiding (id, (.), fst, snd)
 
 data Iso m a b = Iso { to :: m a b, from :: m b a }
 
+type (<->) = Iso (->)
+infix 0 <->
+
 rev :: Iso m a b -> Iso m b a
 rev (Iso f f') = Iso f' f
+
+fiso :: Functor f => (a <-> b) -> (f a <-> f b)
+fiso (Iso f f') = Iso (fmap f) (fmap f')
+
+_Curry :: ((a,b) -> c) <-> (a -> b -> c)
+_Curry = Iso curry uncurry
 
 instance Category m => Category (Iso m) where
   id = Iso id id
   Iso f f' . Iso g g' = Iso (f . g) (g' . f')
-
-type (<->) = Iso (->)
-infix 0 <->
 
 instance Strong m => Strong (Iso m) where
   type Product (Iso m) = Product m

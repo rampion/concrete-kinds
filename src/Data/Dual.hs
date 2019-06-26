@@ -1,4 +1,7 @@
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE TypeOperators #-}
 module Data.Dual where
 import Control.Category
 import Control.Category.Strong
@@ -7,9 +10,17 @@ import Control.Category.Cartesian
 import Control.Category.Cocartesian
 import Control.Category.Final
 import Control.Category.Initial
+import Data.Iso
 import Prelude hiding (id,(.),fst,snd)
 
 newtype Dual m a b = Dual { runDual :: m b a }
+
+type family Dual' (m :: k -> k -> *) = (m' :: k -> k -> *) where -- | m' -> m where
+  Dual' (Dual m) = m
+  Dual' m = Dual m
+
+_Dual :: (m a b <-> Dual m b a)
+_Dual = Iso Dual runDual
 
 instance Category m => Category (Dual m) where
   id = Dual id
