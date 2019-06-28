@@ -17,7 +17,6 @@ type family (×) = (p :: k -> k -> k) | p -> k where
   (×) = Product_
 infixl 7 ×
 
--- TODO: Rename - WrapProduct k says (j -> k) has a product.  Maybe WrapProduct?
 class Product_ ~ (×) => WrapProduct k where
   data Product_ :: (j -> k) -> (j -> k) -> j -> k
 
@@ -26,16 +25,21 @@ class Product_ ~ (×) => WrapProduct k where
                            . Coercible (a x × b x) ((a × b) x) => a x × b x ~=~ (a × b) x
   newtypeProduct_ = IsCoercible
 
-  coercibleProduct_ :: forall (a :: j -> k) b (a' :: j -> k) b'
-                     . (Coercible a a', Coercible b b') => (a × b ~=~ a' × b')
-  default coercibleProduct_ :: forall (a :: j -> k) b (a' :: j -> k) b' j' k'
-                             . (Coercible a a', Coercible b b', k ~ (j' -> k'), WrapProduct k')
-                            => (a × b ~=~ a' × b')
-  coercibleProduct_ = eliminate (newtypeProduct_ . coercibleProduct_ . sym newtypeProduct_)
+  infixr 3 ~***~
+  (~***~) :: forall (a :: k) b (a' :: k) b'
+           . (a ~=~ a') -> (b ~=~ b') -> (a × b ~=~ a' × b')
+  default (~***~) :: forall (a :: k) b (a' :: k) b' j' k'
+                   . (k ~ (j' -> k'), WrapProduct k')
+                  => (a ~=~ a') -> (b ~=~ b') -> (a × b ~=~ a' × b')
+  (~***~) = coercibleProduct_
+
+coercibleProduct_ :: forall (a :: j -> k) b (a' :: j -> k) b'
+         . WrapProduct k => (a ~=~ a') -> (b ~=~ b') -> (a × b ~=~ a' × b')
+coercibleProduct_ IsCoercible IsCoercible = eliminate (newtypeProduct_ . (IsCoercible ~***~ IsCoercible) . sym newtypeProduct_)
 
 instance WrapProduct * where
   newtype Product_ a b x = Product1 { getProduct1 :: a x × b x }
-  coercibleProduct_ = eliminate (newtypeProduct_ . IsCoercible . sym newtypeProduct_)
+  IsCoercible ~***~ IsCoercible = IsCoercible
 
 instance WrapProduct (k -> *) where
   newtype Product_ a b x y = Product2 { getProduct2 :: (a x × b x) y }

@@ -25,16 +25,21 @@ class Sum_ ~ (+) => WrapSum k where
                            . Coercible (a x + b x) ((a + b) x) => a x + b x ~=~ (a + b) x
   newtypeSum_ = IsCoercible
 
-  coercibleSum_ :: forall (a :: j -> k) b (a' :: j -> k) b'
-                     . (Coercible a a', Coercible b b') => (a + b ~=~ a' + b')
-  default coercibleSum_ :: forall (a :: j -> k) b (a' :: j -> k) b' j' k'
-                             . (Coercible a a', Coercible b b', k ~ (j' -> k'), WrapSum k')
-                            => (a + b ~=~ a' + b')
-  coercibleSum_ = eliminate (newtypeSum_ . coercibleSum_ . sym newtypeSum_)
+  (~+++~) :: forall (a :: k) b (a' :: k) b'
+           . (a ~=~ a') -> (b ~=~ b') -> (a + b ~=~ a' + b')
+
+  default (~+++~) :: forall (a :: k) b (a' :: k) b' j' k'
+                   . (k ~ (j' -> k'), WrapSum k')
+                  => (a ~=~ a') -> (b ~=~ b') -> (a + b ~=~ a' + b')
+  (~+++~) = coercibleSum_
+
+coercibleSum_ :: forall (a :: j -> k) b (a' :: j -> k) b'
+               . WrapSum k => (a ~=~ a') -> (b ~=~ b') -> (a + b ~=~ a' + b')
+coercibleSum_ IsCoercible IsCoercible = eliminate (newtypeSum_ . (IsCoercible ~+++~ IsCoercible) . sym newtypeSum_)
 
 instance WrapSum * where
   newtype Sum_ a b x = Sum1 { getSum1 :: a x + b x }
-  coercibleSum_ = eliminate (newtypeSum_ . IsCoercible . sym newtypeSum_)
+  IsCoercible ~+++~ IsCoercible = IsCoercible
 
 instance WrapSum (k -> *) where
   newtype Sum_ a b x y = Sum2 { getSum2 :: (a x + b x) y }

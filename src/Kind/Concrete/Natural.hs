@@ -94,13 +94,13 @@ lower i = Iso (runNatural_ $ to i) (runNatural_ $ from i)
 _Natural_ :: (forall x. a x <~> b x) <-> (a <~> b)
 _Natural_ = Iso lift lower
 -}
+
 instance Category ((~>) ::           k  ->       k  -> *) =>
          Category (Natural_ :: (j -> k) -> (j -> k) -> *) where
   id = Natural_ id
   Natural_ f . Natural_ g = Natural_ (f . g)
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Strong ((~>) :: k -> k -> *)
+instance ( Strong ((~>) :: k -> k -> *)
          , Product ((~>) :: k -> k -> *) ~ (×)
          , WrapProduct k
          , CanCoerce k
@@ -108,8 +108,7 @@ instance ( Category ((~>) :: k -> k -> *)
   type Product Natural_ = Product_
   Natural_ f *** Natural_ g = Natural_ $ to _Product . (f *** g) . from _Product
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Choice ((~>) :: k -> k -> *)
+instance ( Choice ((~>) :: k -> k -> *)
          , Coproduct ((~>) :: k -> k -> *) ~ (+)
          , WrapSum k
          , CanCoerce k
@@ -117,9 +116,7 @@ instance ( Category ((~>) :: k -> k -> *)
   type Coproduct Natural_ = Sum_
   Natural_ f +++ Natural_ g = Natural_ $ to _Sum . (f +++ g) . from _Sum
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Strong ((~>) :: k -> k -> *)
-         , Cartesian ((~>) :: k -> k -> *)
+instance ( Cartesian ((~>) :: k -> k -> *)
          , Product ((~>) :: k -> k -> *) ~ (×)
          , WrapProduct k
          , CanCoerce k
@@ -128,9 +125,7 @@ instance ( Category ((~>) :: k -> k -> *)
   snd = Natural_ $ snd . from _Product
   Natural_ f &&& Natural_ g = Natural_ $ to _Product . (f &&& g)
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Choice ((~>) :: k -> k -> *)
-         , Cocartesian ((~>) :: k -> k -> *)
+instance ( Cocartesian ((~>) :: k -> k -> *)
          , Coproduct ((~>) :: k -> k -> *) ~ (+)
          , WrapSum k
          , CanCoerce k
@@ -139,51 +134,19 @@ instance ( Category ((~>) :: k -> k -> *)
   inr = Natural_ $ to _Sum . inr
   Natural_ f ||| Natural_ g = Natural_ $ (f ||| g) . from _Sum
 
--- have to do distributive in two b/c (,) doesn't have coercibleSum_ / coercibleProduct_
-instance Distributive (Natural_ :: (j -> *) -> (j -> *) -> *) where
-  -- distribute :: (c × (a + b)) ~> (c × a) + (c × b)
-  distribute = Natural_ 
-             $ naturalCoerceBy (liftSum newtypeProduct_ newtypeProduct_ newtypeSum_ $ \IsCoercible IsCoercible -> IsCoercible)
-             . distribute
-             . naturalCoerceBy (lowerProduct newtypeSum_ newtypeProduct_ $ \IsCoercible -> IsCoercible)
-
-instance ( Category ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Strong ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Choice ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Cartesian ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Cocartesian ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Distributive ((~>) :: (j -> k) -> (j -> k) -> *)
-         , Product ((~>) :: (j -> k) -> (j -> k) -> *) ~ (×)
-         , Coproduct ((~>) :: (j -> k) -> (j -> k) -> *) ~ (+)
-         , WrapProduct (j -> k)
+instance ( Distributive ((~>) :: k -> k -> *)
+         , Product ((~>) :: k -> k -> *) ~ (×)
+         , Coproduct ((~>) :: k -> k -> *) ~ (+)
          , WrapProduct k
-         , WrapSum (j -> k)
          , WrapSum k
-         , CanCoerce (j -> k)
-         ) => Distributive (Natural_ :: (i -> j -> k) -> (i -> j -> k) -> *) where
-  -- distribute :: (c × (a + b)) ~> (c × a) + (c × b)
+         , CanCoerce k
+         ) => Distributive (Natural_ :: (j -> k) -> (j -> k) -> *) where
   distribute = Natural_ 
-             $ naturalCoerceBy (liftSum newtypeProduct_ newtypeProduct_ newtypeSum_ $ \IsCoercible IsCoercible -> coercibleSum_)
+             $ naturalCoerceBy (newtypeSum_ . (newtypeProduct_ ~+++~ newtypeProduct_))
              . distribute
-             . naturalCoerceBy (lowerProduct newtypeSum_ newtypeProduct_ $ \IsCoercible -> coercibleProduct_)
+             . naturalCoerceBy (sym $ newtypeProduct_ . (IsCoercible ~***~ newtypeSum_))
 
-liftSum :: forall (a :: j -> k) b c x
-        . (c x × a x ~=~ (c × a) x)
-        -> (c x × b x ~=~ (c × b) x)
-        -> ((c × a) x + (c × b) x ~=~ ((c × a) + (c × b)) x)
-        -> (forall (t :: k) (u :: k) (t' :: k) (u' :: k). (t ~=~ t') -> (u ~=~ u') -> (t + u ~=~ t' + u'))
-        -> ((c x × a x) + (c x × b x) ~=~ ((c × a) + (c × b)) x)
-liftSum a b p f = p . f a b
-
-lowerProduct :: forall (a :: j -> k) b c x
-              . (a x + b x ~=~ (a + b) x)
-             -> (c x × (a + b) x ~=~ (c × (a + b)) x)
-             -> (forall (t :: k) (u :: k) (u' :: k).  (u ~=~ u') -> (t × u ~=~ t × u'))
-             -> ((c × (a + b)) x ~=~ c x × (a x + b x))
-lowerProduct a p f = sym $ p . f a
-
-instance ( Category ((~>) :: k -> k -> *)
-         , Final ((~>) :: k -> k -> *)
+instance ( Final ((~>) :: k -> k -> *)
          , Terminal ((~>) :: k -> k -> *) ~ Unit
          , CanCoerce k
          , WrapUnit k
@@ -191,8 +154,7 @@ instance ( Category ((~>) :: k -> k -> *)
   type Terminal Natural_ = Unit_
   unit = Natural_ $ to _Unit . unit
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Initial ((~>) :: k -> k -> *)
+instance ( Initial ((~>) :: k -> k -> *)
          , Coterminal ((~>) :: k -> k -> *) ~ Void
          , CanCoerce k
          , WrapVoid k
@@ -200,9 +162,7 @@ instance ( Category ((~>) :: k -> k -> *)
   type Coterminal Natural_ = Void_
   absurd = Natural_ $ absurd . from _Void
 
-instance ( Category ((~>) :: k -> k -> *)
-         , Strong ((~>) :: k -> k -> *)
-         , Closed ((~>) :: k -> k -> *)
+instance ( Closed ((~>) :: k -> k -> *)
          , Product ((~>) :: k -> k -> *) ~ (×)
          , Exp ((~>) :: k -> k -> *) ~ (^)
          , WrapProduct k

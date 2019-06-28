@@ -26,17 +26,20 @@ class WrapExp k where
                       => a x ^ b x ~=~ (a ^ b) x
   newtypeExp_ = IsCoercible
 
-  coercibleExp_ :: forall (a :: j -> k) (a' :: j -> k) (b :: j -> k) (b' :: j -> k)
-                 . (Coercible a a', Coercible b b') => (a ^ b) ~=~ (a' ^ b')
-  default coercibleExp_ :: forall (a :: j -> k) b (a' :: j -> k) b' j' k'
-                         . (Coercible a a', Coercible b b', k ~ (j' -> k'), WrapExp k')
-                        => (a ^ b ~=~ a' ^ b')
-  coercibleExp_ = eliminate (newtypeExp_ . coercibleExp_ . sym newtypeExp_)
-  
+  app :: forall (a :: k) (a' :: k) (b :: k) (b' :: k)
+       . (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
+  default app :: forall (a :: k) b (a' :: k) b' j' k'
+               . (k ~ (j' -> k'), WrapExp k')
+              => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
+  app = coercibleExp_
+
+coercibleExp_ :: forall (a :: j -> k) b (a' :: j -> k) b'
+               . WrapExp k => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
+coercibleExp_ IsCoercible IsCoercible = eliminate (newtypeExp_ . app IsCoercible IsCoercible . sym newtypeExp_)
 
 instance WrapExp * where
   newtype Exp_ a b x = Exp1 { getExp1 :: a x ^ b x }
-  coercibleExp_ = eliminate (newtypeExp_ . IsCoercible . sym newtypeExp_)
+  app IsCoercible IsCoercible = IsCoercible
 
 instance WrapExp (j -> *) where
   newtype Exp_ a b x y = Exp2 { getExp2 :: (a x ^ b x) y }
