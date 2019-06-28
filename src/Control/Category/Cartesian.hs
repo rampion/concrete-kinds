@@ -1,3 +1,4 @@
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
 module Control.Category.Cartesian where
 import Control.Category

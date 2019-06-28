@@ -24,9 +24,10 @@ library
                      , Control.Category.Cocartesian
                      , Control.Category.Distributive
                      , Control.Category.Closed
-                     , Control.Category.Coercible
                      , Data.Iso
                      , Data.Dual
+                     , Data.ReprEq
+                     , Kind.Concrete
                      , Kind.Concrete.Product
                      , Kind.Concrete.Sum
                      , Kind.Concrete.Unit
@@ -37,6 +38,7 @@ library
                      , Kind.Concrete.Natural
                      , Kind.Concrete.Exp
                      , Kind.Concrete.Compose
+                     , Kind.Concrete.Class
                      , Kind.Concrete.Fix
                      , Kind.Concrete.Free
   -- other-modules:

@@ -18,7 +18,7 @@ eval = from _Closure id
 
 instance Closed (->) where
   type Exp (->) = Dual (->)
-  _Closure = fiso _Dual . _Curry
+  _Closure = precompose _Dual . _Curry
 
 instance Coclosed m => Closed (Dual m) where
   type Exp (Dual m) = Coexp m
