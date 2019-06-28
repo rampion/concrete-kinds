@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 module Kind.Concrete.Product where
-import Data.ReprEq
+import Data.Type.Coercion
 import Data.Coerce
 import Control.Category
 import Prelude hiding (id, (.))
@@ -23,7 +23,7 @@ class Product_ ~ (×) => WrapProduct k where
   newtypeProduct_ :: forall (a :: j -> k) b x. a x × b x ~=~ (a × b) x
   default newtypeProduct_ :: forall (a :: j -> k) b x
                            . Coercible (a x × b x) ((a × b) x) => a x × b x ~=~ (a × b) x
-  newtypeProduct_ = IsCoercible
+  newtypeProduct_ = Coercion
 
   infixr 3 ~***~
   (~***~) :: forall (a :: k) b (a' :: k) b'
@@ -35,11 +35,11 @@ class Product_ ~ (×) => WrapProduct k where
 
 coercibleProduct_ :: forall (a :: j -> k) b (a' :: j -> k) b'
          . WrapProduct k => (a ~=~ a') -> (b ~=~ b') -> (a × b ~=~ a' × b')
-coercibleProduct_ IsCoercible IsCoercible = eliminate (newtypeProduct_ . (IsCoercible ~***~ IsCoercible) . sym newtypeProduct_)
+coercibleProduct_ Coercion Coercion = eliminate (newtypeProduct_ . (Coercion ~***~ Coercion) . sym newtypeProduct_)
 
 instance WrapProduct * where
   newtype Product_ a b x = Product1 { getProduct1 :: a x × b x }
-  IsCoercible ~***~ IsCoercible = IsCoercible
+  Coercion ~***~ Coercion = Coercion
 
 instance WrapProduct (k -> *) where
   newtype Product_ a b x y = Product2 { getProduct2 :: (a x × b x) y }

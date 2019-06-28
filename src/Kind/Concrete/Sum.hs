@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
 module Kind.Concrete.Sum where
-import Data.ReprEq
+import Data.Type.Coercion
 import Data.Coerce
 import Control.Category
 import Prelude hiding (id, (.))
@@ -23,7 +23,7 @@ class Sum_ ~ (+) => WrapSum k where
   newtypeSum_ :: forall (a :: j -> k) b x. a x + b x ~=~ (a + b) x
   default newtypeSum_ :: forall (a :: j -> k) b x
                            . Coercible (a x + b x) ((a + b) x) => a x + b x ~=~ (a + b) x
-  newtypeSum_ = IsCoercible
+  newtypeSum_ = Coercion
 
   (~+++~) :: forall (a :: k) b (a' :: k) b'
            . (a ~=~ a') -> (b ~=~ b') -> (a + b ~=~ a' + b')
@@ -35,11 +35,11 @@ class Sum_ ~ (+) => WrapSum k where
 
 coercibleSum_ :: forall (a :: j -> k) b (a' :: j -> k) b'
                . WrapSum k => (a ~=~ a') -> (b ~=~ b') -> (a + b ~=~ a' + b')
-coercibleSum_ IsCoercible IsCoercible = eliminate (newtypeSum_ . (IsCoercible ~+++~ IsCoercible) . sym newtypeSum_)
+coercibleSum_ Coercion Coercion = eliminate (newtypeSum_ . (Coercion ~+++~ Coercion) . sym newtypeSum_)
 
 instance WrapSum * where
   newtype Sum_ a b x = Sum1 { getSum1 :: a x + b x }
-  IsCoercible ~+++~ IsCoercible = IsCoercible
+  Coercion ~+++~ Coercion = Coercion
 
 instance WrapSum (k -> *) where
   newtype Sum_ a b x y = Sum2 { getSum2 :: (a x + b x) y }

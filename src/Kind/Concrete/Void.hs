@@ -8,7 +8,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Kind.Concrete.Void where
 import qualified Data.Void as Shadowed
-import Data.ReprEq
+import Data.Type.Coercion
 import Data.Coerce
 
 type family Void = (v :: k) | v -> k where
@@ -20,7 +20,7 @@ class Void_ ~ Void => WrapVoid k where
 
   newtypeVoid_ :: Void ~=~ (Void_ x :: k)
   default newtypeVoid_ :: Coercible Void (Void_ x :: k) => Void ~=~ (Void_ x :: k)
-  newtypeVoid_ = IsCoercible
+  newtypeVoid_ = Coercion
 
 instance WrapVoid * where
   newtype Void_ x = Void1 { getVoid1 :: Void }

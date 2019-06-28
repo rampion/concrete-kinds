@@ -8,7 +8,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Kind.Concrete.Exp where
 import Data.Dual
-import Data.ReprEq
+import Data.Type.Coercion
 import Data.Coerce
 import Control.Category
 import Prelude hiding (id, (.))
@@ -24,7 +24,7 @@ class WrapExp k where
   default newtypeExp_ :: forall (a :: j -> k) b x
                        . Coercible (a x ^ b x) ((a ^ b) x)
                       => a x ^ b x ~=~ (a ^ b) x
-  newtypeExp_ = IsCoercible
+  newtypeExp_ = Coercion
 
   app :: forall (a :: k) (a' :: k) (b :: k) (b' :: k)
        . (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
@@ -35,11 +35,11 @@ class WrapExp k where
 
 coercibleExp_ :: forall (a :: j -> k) b (a' :: j -> k) b'
                . WrapExp k => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
-coercibleExp_ IsCoercible IsCoercible = eliminate (newtypeExp_ . app IsCoercible IsCoercible . sym newtypeExp_)
+coercibleExp_ Coercion Coercion = eliminate (newtypeExp_ . app Coercion Coercion . sym newtypeExp_)
 
 instance WrapExp * where
   newtype Exp_ a b x = Exp1 { getExp1 :: a x ^ b x }
-  app IsCoercible IsCoercible = IsCoercible
+  app Coercion Coercion = Coercion
 
 instance WrapExp (j -> *) where
   newtype Exp_ a b x y = Exp2 { getExp2 :: (a x ^ b x) y }

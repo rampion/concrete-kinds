@@ -19,7 +19,7 @@ import Control.Category.Closed
 import Control.Category.Final
 import Control.Category.Initial
 import Data.Iso
-import Data.ReprEq
+import Data.Type.Coercion
 import Data.Coerce
 import Kind.Concrete.Product
 import Kind.Concrete.Sum
@@ -51,13 +51,13 @@ instance CanCoerce k => CanCoerce (j -> k) where
   naturalCoerce = Natural_ naturalCoerce
 
 naturalCoerceBy :: forall (a :: k) (b :: k). CanCoerce k => a ~=~ b -> a ~> b
-naturalCoerceBy IsCoercible = naturalCoerce
+naturalCoerceBy Coercion = naturalCoerce
 
 toNaturalIso :: forall (a :: k) b. CanCoerce k => (a ~=~ b) -> (a <~> b)
 toNaturalIso p = Iso (naturalCoerceBy p) (naturalCoerceBy $ sym p)
 
 _Coerce :: forall (a :: k) b. (CanCoerce k, Coercible a b) => a <~> b
-_Coerce = toNaturalIso IsCoercible
+_Coerce = toNaturalIso Coercion
 
 _Product :: forall (a :: j -> k) b x. (CanCoerce k, WrapProduct k)
          => (a x × b x) <~> (a × b) x
@@ -144,7 +144,7 @@ instance ( Distributive ((~>) :: k -> k -> *)
   distribute = Natural_ 
              $ naturalCoerceBy (newtypeSum_ . (newtypeProduct_ ~+++~ newtypeProduct_))
              . distribute
-             . naturalCoerceBy (sym $ newtypeProduct_ . (IsCoercible ~***~ newtypeSum_))
+             . naturalCoerceBy (sym $ newtypeProduct_ . (Coercion ~***~ newtypeSum_))
 
 instance ( Final ((~>) :: k -> k -> *)
          , Terminal ((~>) :: k -> k -> *) ~ Unit
