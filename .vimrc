@@ -4,3 +4,6 @@ set path=.,src/**/
 
 iabbr >< ×
 iabbr o ∘
+iabbr <= ⊆
+
+syn keyword hsVarSym ⊆ 
