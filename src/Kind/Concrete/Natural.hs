@@ -105,7 +105,7 @@ instance ( Strong ((~>) :: k -> k -> *)
          , WrapProduct k
          , CanCoerce k
          ) => Strong (Natural_ :: (j -> k) -> (j -> k) -> *) where
-  type Product Natural_ = Product_
+  type Product Natural_ = (×)
   Natural_ f *** Natural_ g = Natural_ $ to _Product . (f *** g) . from _Product
 
 instance ( Choice ((~>) :: k -> k -> *)
@@ -113,7 +113,7 @@ instance ( Choice ((~>) :: k -> k -> *)
          , WrapSum k
          , CanCoerce k
          ) => Choice (Natural_ :: (j -> k) -> (j -> k) -> *) where
-  type Coproduct Natural_ = Sum_
+  type Coproduct Natural_ = (+)
   Natural_ f +++ Natural_ g = Natural_ $ to _Sum . (f +++ g) . from _Sum
 
 instance ( Cartesian ((~>) :: k -> k -> *)
@@ -169,7 +169,7 @@ instance ( Closed ((~>) :: k -> k -> *)
          , WrapExp k
          , CanCoerce k
          ) => Closed (Natural_ :: (j -> k) -> (j -> k) -> *) where
-  type Exp Natural_ = Exp_
+  type Exp Natural_ = (^)
   _Closure = wrap $ precompose _Exp . _Closure . postcompose _Product
 
 --------------------------------------------------------------------------------

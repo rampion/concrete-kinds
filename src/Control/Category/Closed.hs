@@ -16,9 +16,14 @@ class Strong m => Closed (m :: k -> k -> *) where
 eval :: Closed m => Product m (Exp m b a) a `m` b
 eval = from _Closure id
 
+newtype ReversedFunction b a = ReversedFunction { runReversedFunction :: a -> b }
+
+_ReversedFunction :: (a -> b) <-> (ReversedFunction b a)
+_ReversedFunction = Iso ReversedFunction runReversedFunction
+
 instance Closed (->) where
-  type Exp (->) = Dual (->)
-  _Closure = precompose _Dual . _Curry
+  type Exp (->) = ReversedFunction
+  _Closure = precompose _ReversedFunction . _Curry
 
 instance Coclosed m => Closed (Dual m) where
   type Exp (Dual m) = Coexp m

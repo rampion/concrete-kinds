@@ -7,42 +7,46 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Kind.Concrete.Exp where
-import Data.Dual
 import Data.Type.Coercion
 import Data.Coerce
-import Control.Category
-import Prelude hiding (id, (.))
+import Control.Category.Closed
 
 type family (^) = (e :: k -> k -> k) | e -> k where
-  (^) = Dual (->)
-  (^) = Exp_
+  (^) = ReversedFunction
+  (^) = Exp1
+  (^) = Exp2
+  (^) = Exp3
+
+class CoercibleExp k where
+  coercibleExp_ :: forall (a :: k) b (a' :: k) b'
+                 . (Coercible a a', Coercible b b')
+                => (a ^ b ~=~ a' ^ b')
+  default coercibleExp_ :: forall (a :: k) b (a' :: k) b'
+                         . Coercible (a ^ b) (a' ^ b')
+                        => (a ^ b ~=~ a' ^ b')
+  coercibleExp_ = Coercion
+
+app :: forall (a :: k) (a' :: k) (b :: k) (b' :: k)
+     . CoercibleExp k => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
+app Coercion Coercion = coercibleExp_
 
 class WrapExp k where
-  data Exp_ :: (j -> k) -> (j -> k) -> j -> k
-
   newtypeExp_ :: forall (a :: j -> k) b x. a x ^ b x ~=~ (a ^ b) x
   default newtypeExp_ :: forall (a :: j -> k) b x
                        . Coercible (a x ^ b x) ((a ^ b) x)
                       => a x ^ b x ~=~ (a ^ b) x
   newtypeExp_ = Coercion
 
-  app :: forall (a :: k) (a' :: k) (b :: k) (b' :: k)
-       . (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
-  default app :: forall (a :: k) b (a' :: k) b' j' k'
-               . (k ~ (j' -> k'), WrapExp k')
-              => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
-  app = coercibleExp_
+instance CoercibleExp *
+instance WrapExp *
+newtype Exp1 a b x = Exp1 { getExp1 :: ReversedFunction (a x) (b x) }
 
-coercibleExp_ :: forall (a :: j -> k) b (a' :: j -> k) b'
-               . WrapExp k => (a ~=~ a') -> (b ~=~ b') -> (a ^ b ~=~ a' ^ b')
-coercibleExp_ Coercion Coercion = eliminate (newtypeExp_ . app Coercion Coercion . sym newtypeExp_)
+instance CoercibleExp (j -> *)
+instance WrapExp (j -> *)
+newtype Exp2 a b x y = Exp2 { getExp2 :: Exp1 (a x) (b x) y }
 
-instance WrapExp * where
-  newtype Exp_ a b x = Exp1 { getExp1 :: a x ^ b x }
-  app Coercion Coercion = Coercion
+instance CoercibleExp (i -> j -> *)
+instance WrapExp (i -> j -> *)
+newtype Exp3 a b x y z = Exp3 { getExp3 :: Exp2 (a x) (b x) y z }
 
-instance WrapExp (j -> *) where
-  newtype Exp_ a b x y = Exp2 { getExp2 :: (a x ^ b x) y }
-
-instance WrapExp (i -> j -> *) where
-  newtype Exp_ a b x y z = Exp3 { getExp3 :: (a x ^ b x) y z }
+instance CoercibleExp (i -> j -> k -> *)
