@@ -2,13 +2,6 @@ extend Dual into a Flip family
 extend Iso into an Iso family
 Identity/Const/etc also need proofs of coercibility
 decide whether to continue with eliminate
-Void, Unit as Const
-
-```haskell
-type family Void = (v :: k) | v -> k where
-  Void = Shadowed.Void
-  Void = Const Void
-```
 
 better names/fewer underscores ? :)
 

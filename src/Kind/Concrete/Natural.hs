@@ -26,6 +26,7 @@ import Kind.Concrete.Sum
 import Kind.Concrete.Exp
 import Kind.Concrete.Unit
 import Kind.Concrete.Void
+import Kind.Concrete.Const
 
 type family (~>) = (m :: k -> k -> *) | m -> k where
   (~>) = (->)
@@ -67,11 +68,8 @@ _Sum :: forall (a :: j -> k) b x. (CanCoerce k, WrapSum k)
          => (a x + b x) <~> (a + b) x
 _Sum = toNaturalIso newtypeSum_ 
 
-_Unit :: (CanCoerce k, WrapUnit k) => Unit <~> (Unit x :: k)
-_Unit = toNaturalIso newtypeUnit_
-
-_Void :: (CanCoerce k, WrapVoid k) => Void <~> (Void x :: k)
-_Void = toNaturalIso newtypeVoid_
+_Const :: (CanCoerce k, WrapConst k) => a <~> (Const a b :: k)
+_Const = toNaturalIso newtypeConst_
          
 _Exp :: forall (a :: j -> k) b x. (CanCoerce k, WrapExp k)
      => (a x ^ b x) <~> (a ^ b) x
@@ -149,18 +147,18 @@ instance ( Distributive ((~>) :: k -> k -> *)
 instance ( Final ((~>) :: k -> k -> *)
          , Terminal ((~>) :: k -> k -> *) ~ Unit
          , CanCoerce k
-         , WrapUnit k
+         , WrapConst k
          ) => Final (Natural_ :: (j -> k) -> (j -> k) -> *) where
-  type Terminal Natural_ = Unit_
-  unit = Natural_ $ to _Unit . unit
+  type Terminal Natural_ = Unit -- Const (Terminal ((~>) :: k -> k -> *))
+  unit = Natural_ $ to _Const . unit
 
 instance ( Initial ((~>) :: k -> k -> *)
          , Coterminal ((~>) :: k -> k -> *) ~ Void
          , CanCoerce k
-         , WrapVoid k
+         , WrapConst k
          ) => Initial (Natural_ :: (j -> k) -> (j -> k) -> *) where
-  type Coterminal Natural_ = Void_
-  absurd = Natural_ $ absurd . from _Void
+  type Coterminal Natural_ = Void -- Const (Coterminal ((~>) :: k -> k -> *))
+  absurd = Natural_ $ absurd . from _Const
 
 instance ( Closed ((~>) :: k -> k -> *)
          , Product ((~>) :: k -> k -> *) ~ (×)

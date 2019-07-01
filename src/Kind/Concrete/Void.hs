@@ -1,32 +1,14 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts #-}
 module Kind.Concrete.Void where
 import qualified Data.Void as Shadowed
 import Data.Type.Coercion
-import Data.Coerce
+import Kind.Concrete.Const
 
-type family Void = (v :: k) | v -> k where
+type family Void = (v :: k) where
   Void = Shadowed.Void
-  Void = Void_
+  Void = Const Void
 
-class Void_ ~ Void => WrapVoid k where
-  data Void_ :: (i -> k)
-
-  newtypeVoid_ :: Void ~=~ (Void_ x :: k)
-  default newtypeVoid_ :: Coercible Void (Void_ x :: k) => Void ~=~ (Void_ x :: k)
-  newtypeVoid_ = Coercion
-
-instance WrapVoid * where
-  newtype Void_ x = Void1 { getVoid1 :: Void }
-
-instance WrapVoid (j -> *) where
-  newtype Void_ x y = Void2 { getVoid2 :: Void y }
-
-instance WrapVoid (i -> j -> *) where
-  newtype Void_ x y z = Void3 { getVoid3 :: Void y z }
+newtypeVoid_ :: WrapConst k => Void ~=~ (Void x :: k)
+newtypeVoid_ = newtypeConst_
