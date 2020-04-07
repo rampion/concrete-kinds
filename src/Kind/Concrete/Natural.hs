@@ -41,8 +41,8 @@ newtype Natural3' (a :: h -> i -> j -> k) (b :: h -> i -> j -> k)
 toNatural3' :: Natural_ a b -> Natural3' a b
 -- toNatural3' (Natural2 f) = Natural3' (runNatural1 f) -- yes
 -- toNatural3' (Natural1 f) = Natural3' (runNatural2 f) -- yes
--- toNatural3' (Natural1 (Natural1 f)) = Natural3' (runNatural1 f) -- no
 -- toNatural3' (Natural1 f) = Natural3' (runNatural1 (runNatural1 f)) -- yes
+-- toNatural3' (Natural1 (Natural1 f)) = Natural3' (runNatural1 f) -- no
 -- toNatural3' (Natural1 (runNatural1 -> f)) = Natural3' (runNatural1 f) -- no
 toNatural3' f = Natural3' (runNatural1 (runNatural1 (runNatural1 f))) -- yes
 

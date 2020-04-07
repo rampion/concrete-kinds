@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE PolyKinds #-}
 module Data.Iso where
 import Control.Category
 import Control.Category.Strong
@@ -8,7 +9,7 @@ import Control.Category.Choice
 import Control.Category.Cocartesian
 import Prelude hiding (id, (.), fst, snd)
 
-data Iso m a b = Iso { to :: m a b, from :: m b a }
+data Iso (m :: k -> k -> *) a b = Iso { to :: m a b, from :: m b a }
 
 rev :: Iso m a b -> Iso m b a
 rev (Iso f f') = Iso f' f
