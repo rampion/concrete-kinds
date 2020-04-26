@@ -54,6 +54,12 @@ class ( Distributive ((~>) :: k -> k -> *)
   -}
 
 
+  -- Free is really Cont
+  --
+  -- data Cont :: k -> k -> k
+  -- return :: a ~> Cont b a
+  -- runCont :: (a ~> b) -> (Cont b a ~> b)
+  --
   data Free :: (k -> Constraint) -> k -> k
   call :: forall (a :: k) (c :: k -> Constraint). a ~> Free c a
   interpret :: forall (a :: k) b (c :: k -> Constraint). c b => (a ~> b) -> Free c a ~> b
