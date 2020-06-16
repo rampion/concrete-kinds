@@ -1,49 +1,3 @@
-constructor kinds
-
-```
-⤑
-⇢
-─
-d2504
-ú4∘
-┄>
-┅>
-┈>
-┉>kk
-⋯>
-━>
-─>
-->
--->
-
-
-~~>
-~*~
-~+~
-
-*~*
-+~+
->~>
-
-*-*
-+-+
->->
-
--->
--*-
--+-
-
-natural -> functional?
-
-
-Binary :: (* -> * -> *) -> k -> k -> k
-Natural :: k -> *
-```
-
-
-
-
-
 This package defines *concrete kinds* as the family of kinds for
 type constructors defined by `data` and `newtype`.
 
@@ -60,30 +14,7 @@ object, functor composition, free types, and fixed points.
 
 ----
 
-Extends Hask to "higher" kinds.
-
-```haskell
-
-~*~
-~+~
-~>
-
-× 
-+
-⟶
-→
-⇨
-⇴
-
->->
-<+>
-<×>
-
-```
-
-----
-
-TODO: use `categories` instead of custom `Control.Category.*`
+TODO: rewrite classes from `categories` instead of custom `Control.Category.*`
 
 - Cartesian -> Cartesian
 - Choice -> Monoidal arr (Coproduct Arr)
@@ -94,4 +25,6 @@ TODO: use `categories` instead of custom `Control.Category.*`
 - Initial -> HasInitialObject
 - Strong -> Monoidall arr (Product Arr)
 
-TODO: Rename "Natural" to "Arrow"?
+Need to rewrite b/c categories isn't sufficiently kind-polymorphic
+
+TODO: Rename "Natural" to "Arrow"? - see rewrite
