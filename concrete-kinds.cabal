@@ -16,25 +16,27 @@ flag Development
   manual: True
 
 library
-  exposed-modules:     Control.Category.Initial
-                     , Control.Category.Final
-                     , Control.Category.Strong
-                     , Control.Category.Cartesian
-                     , Control.Category.Choice
-                     , Control.Category.Cocartesian
-                     , Control.Category.Distributive
-                     , Control.Category.Exponential
-                     , Data.Iso
-                     , Kind.Concrete.Product
-                     , Kind.Concrete.Sum
-                     , Kind.Concrete.Unit
-                     , Kind.Concrete.Void
-                     , Kind.Concrete.Identity
-                     , Kind.Concrete.Const
-                     , Kind.Concrete.Subst
-                     , Kind.Concrete.Natural
-                     , Kind.Concrete.Extension
-                     , Kind.Concrete
+  exposed-modules:  Control.Categorical.Functor
+                  , Control.Categorical.Bifunctor
+                  -- , Control.Categorical.Profunctor
+                  , Data.Dual
+                  , Data.Universal
+                  -- , Control.Category.Cartesian
+
+  -- exposed-modules:     Control.Categorical.Object
+  --                   , Control.Categorical.Functor
+                     -- , Control.Categorical.Bifunctor
+  -- exposed-modules:     Kind.Concrete.Product
+  --                    , Kind.Concrete.Sum
+  --                    , Kind.Concrete.Unit
+  --                    , Kind.Concrete.Void
+  --                    , Kind.Concrete.Identity
+  --                    , Kind.Concrete.Const
+  --                    , Kind.Concrete.Subst
+  --                    , Kind.Concrete.Natural
+  --                    , Kind.Concrete.Extension
+  --                    , Kind.Concrete
+  --                    , Control.Category.Cartesian
   -- other-modules:
   -- other-extensions:
   build-depends:       base ^>=4.12.0.0

@@ -10,3 +10,6 @@
 · copy `Control.Category.Dual` from `categories`
 · see if there's anything else from `categories` we should also provide
 
+------
+
+New idea: build on top of categories
