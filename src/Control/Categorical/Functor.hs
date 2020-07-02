@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -19,13 +20,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 -- prevent GHC from complaining about Birepresentational
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints -fprint-potential-instances #-}
-module Control.Categorical.Functor 
-  ( Functor(..)
-  , Contravariant, contramap
-  , Kewfunctor, pmap, pmap', qmap, contrapmap, contraqmap
-  , Representational, Birepresentational, domain, codomain, parameter
-  , CategoryInstance(..)
-  ) where
+module Control.Categorical.Functor  where
 
 import qualified Prelude as Shadowed
 import qualified Data.Functor.Contravariant as Shadowed
@@ -40,147 +35,142 @@ import Data.Universal
 import Data.Dual
 
 class (Category srcarrow, Category dstarrow) => 
-      Functor (srcarrow :: srcobject -> srcobject -> *)
-              (dstarrow :: dstobject -> dstobject -> *) 
-              (functor :: srcobject -> dstobject) where
+      Functor (functor :: srcobject -> dstobject)
+               (srcarrow :: srcobject -> srcobject -> *)
+               (dstarrow :: dstobject -> dstobject -> *) where
   fmap :: (a `srcarrow` b) -> (functor a `dstarrow` functor b)
 
--- [1] All 'core' functors are Functors in (->), (->)
-instance Shadowed.Functor functor => Functor (->) (->) functor where
+-- [0] Instances of Prelude's Functor class are endofunctors from the category
+--     of types (->) to itself.
+instance Shadowed.Functor functor => Functor functor (->) (->) where
   fmap = Shadowed.fmap
 
--- Contravariant functors are just functors that flip one of the arrows around
-type Contravariant srcarrow dstarrow functor =
-  (Flippable srcarrow, Functor (Flipped srcarrow) dstarrow functor)
+-- [1]  Instances of Category, cat, each define two functors from cat to the
+--      category of types (->), (a `cat` _) and (_ `cat` b) (the hom functors).
+--
+--      However, we can't define an instance
+--
+--        instance Category cat => Functor (cat a) cat (->)
+--
+--      because it overlaps with the instance defined in [0] where
+--      (functor ~ (->) a, cat ~ (->)).
+--
+--      (We only need to define one functor instance for each category because
+--      we get an instance for its Dual automatically due to Dual cat's
+--      instance of Category).
+--
+--      We could use the OVERLAPPABLE pragma to allow the two instances to coexist,
+--      but it would interfere with GHC's ability to infer Functor instance
+--      for nonspecified instances of Prelude's Functor, which would introduce
+--      some impedence for users.
+--
+--      For example, this wouldn't compile:
+--
+--        >>> fmap' :: Shadowed.Functor functor => (a -> b) -> (functor a -> functor b)
+--        >>> fmap' = fmap
+--
+--      We can get around this by defining a newtype wrapper for (->) and defining
+--      functors from cat to this newtype's category.
+--
+--      This also lets us use DerivingVia to easily define functors from cat to the
+--      category of types on a one by one basis. Not a perfect solution, but a
+--      workable compromise.
+newtype Hask a b = Hask { getHask :: a -> b }
+  deriving Category
 
-contramap :: Contravariant srcarrow dstarrow functor
+instance Category cat => Functor (cat x) cat Hask where
+  fmap cab = Hask $ \cxa -> cab . cxa
+
+deriving via Hask instance Monad m => Functor (Kleisli m x) (Kleisli m) (->)
+
+-- Contravariant functors are just functors that flip one of the arrows around
+type Contravariant functor srcarrow dstarrow =
+  (Flippable srcarrow, Functor functor (Flipped srcarrow) dstarrow)
+
+contramap :: Contravariant functor srcarrow dstarrow
           => (b `srcarrow` a) -> (functor a `dstarrow` functor b)
 contramap = coerceWith (domain (sym newtypeFlipped)) fmap
 
 -- [2] All 'core' contravariant functors are Functors
-instance Shadowed.Contravariant functor => Functor (Dual (->)) (->) functor where
+instance Shadowed.Contravariant functor => Functor functor (Dual (->)) (->) where
   fmap = coerceWith (domain newtypeDual) contramap
 
--- type Peafunctor srcarrow dstarrow functor =
+class (Functor functor prrow (Universal arrow)) => Peafunctor functor prrow arrow where
+  pmap :: (a `prrow` b) -> (functor a x `arrow` functor b x)
+  pmap = getUniversal . fmap
 
-pmap' :: (Flippable functor, Functor prrow arrow (functor `Flipped` x), Birepresentational arrow)
-      => (a `prrow` b) -> (functor a x `arrow` functor b x)
-pmap' = coerceWith (codomain (domain (sym newtypeFlipped) . codomain newtypeFlipped)) fmap
+instance (Functor functor prrow (Universal arrow)) => Peafunctor functor prrow arrow
 
-pmap :: Functor prrow (Universal arrow) functor
-     => (a `prrow` b) -> (functor a x `arrow` functor b x)
-pmap = getUniversal . fmap
-
-contrapmap :: Contravariant prrow (Universal arrow) functor
+contrapmap :: (Peafunctor functor (Flipped prrow) arrow, Flippable prrow)
            => (a `prrow` b) -> functor b x `arrow` functor a x
 contrapmap = coerceWith (domain (sym newtypeFlipped)) pmap
 
--- Kewfunctor srcarrow dstarrow functor implies
---  forall x. Functor srcarrow dstarrow (functor x)
--- in the absence of impredictive types
-type Kewfunctor srcarrow dstarrow functor =
-  ( Flippable functor
-  , Functor srcarrow (Universal dstarrow) (Flipped functor)
-  )
 
-qmap :: ( Kewfunctor qrrow arrow functor
-        , Birepresentational arrow
-        )
-     => c `qrrow` d -> functor x c `arrow` functor x d
-qmap = coerceWith (codomain (domain (sym newtypeFlipped) . codomain newtypeFlipped)) pmap where
+class (forall x. Functor (functor x) qrrow arrow) => Kewfunctor functor qrrow arrow where
+  qmap :: c `qrrow` d -> functor x c `arrow` functor x d
+  qmap = fmap
 
-contraqmap :: ( Flippable functor
-              , Contravariant qrrow (Universal arrow) (Flipped functor)
-              , Birepresentational arrow
-              )
+instance (forall x. Functor (functor x) qrrow arrow) => Kewfunctor functor qrrow arrow
+
+contraqmap :: (Kewfunctor functor (Flipped qrrow) arrow, Flippable qrrow)
            => c `qrrow` d -> functor x d `arrow` functor x c
 contraqmap = coerceWith (domain (sym newtypeFlipped)) qmap
 
+
 -- Representational functors are type constructors that have a parameter with
 -- a representational role
-type Representational = Functor Coercion Coercion
+
+class    (forall a b. Coercible a b => Coercible (op a) (op b)) => Representational op
+instance (forall a b. Coercible a b => Coercible (op a) (op b)) => Representational op
+
+class Representational op => Pearepresentational op where
+  domain :: Coercion a b -> Coercion (b `op` c) (a `op` c)
+  domain = parameter . sym . fmap
+
+instance Representational op => Pearepresentational op
+
+class (forall x. Representational (op x)) => Kewrepresentational op where
+  codomain :: Coercion a b -> Coercion (c `op` a) (c `op` b)
+  codomain = fmap
+
+instance (forall x. Representational (op x)) => Kewrepresentational op
+
 
 -- Birepresentational functors are type constructors that have two parameters
 -- with representational roles
-type Birepresentational f = 
-  ( Functor Coercion Coercion f
-  , Kewfunctor Coercion Coercion f
-  )
+type Birepresentational op = (Pearepresentational op, Kewrepresentational op)
 
 -- [3] Representational functors are Functors
 instance
     ( forall a b. Coercible a b => Coercible (f a) (f b)
-    ) => Functor Coercion Coercion f where
+    ) => Functor f Coercion Coercion where
   fmap Coercion = Coercion
 
 parameter :: a `Coercion` b -> a x `Coercion` b x
 parameter Coercion = Coercion
 
-domain :: Functor Coercion Coercion arrow => Coercion a b -> Coercion (b `arrow` c) (a `arrow` c)
-domain = parameter . sym . fmap
-
-codomain :: Kewfunctor Coercion Coercion arrow => Coercion a b -> Coercion (c `arrow` a) (c `arrow` b)
-codomain proof = newtypeFlipped . getUniversal (fmap proof) . sym newtypeFlipped 
-
 -- [4] Universality; Functors can drop extraneous parameters
 instance
-    -- functor' is needed to prove to GHC that Flipped only depends on its first parameter
-    ( functor' ~ Flipped functor
-    , forall q. Functor prrow arrow (functor' q)
+    -- rotcnuf is needed to prove to GHC that Flipped only depends on its first parameter
+    ( rotcnuf ~ Flipped functor
+    , forall q. Functor (rotcnuf q) prrow arrow
     , Flippable functor
     , Birepresentational arrow
-    ) => Functor prrow (Universal arrow) functor where
+    ) => Functor functor prrow (Universal arrow) where
 
   fmap f = Universal $ coerceWith proof fmap f where
     proof :: Coercion
-      (prrow b a -> arrow (functor' q b) (functor' q a))
+      (prrow b a -> arrow (rotcnuf q b) (rotcnuf q a))
       (prrow b a -> arrow (functor b q) (functor a q))
     proof = codomain (domain (sym newtypeFlipped) . codomain newtypeFlipped)
 
 -- [5] Duals; we can flip both arrows
-instance ( Functor (Flipped srcarrow) dstarrow functor
+instance ( Functor functor (Flipped srcarrow) dstarrow
          , Category srcarrow
          , Flippable srcarrow
-         ) => Functor srcarrow (Dual dstarrow) functor where
+         ) => Functor functor srcarrow (Dual dstarrow) where
   fmap = coerceWith proof fmap where
     proof :: Coercion
        (Flipped srcarrow b a -> dstarrow (functor b) (functor a))
        (srcarrow a b -> Dual dstarrow (functor a) (functor b))
     proof = domain (sym newtypeFlipped) . codomain (sym newtypeDual)
-
---------------------------------------------------------------------------------
-
-newtype CategoryInstance (cat :: k -> k -> *) a b = CategoryInstance { getCategoryInstance :: cat a b }
-  deriving Category
-
-instance Category cat => Functor cat (->) (CategoryInstance cat x) where
-  fmap f g = CategoryInstance f . g
-
-instance Category cat => Functor (Dual cat) (->) (CategoryInstance cat `Dual` x) where
-  fmap (Dual1 f) (Dual1 g) = Dual1 (g . CategoryInstance f)
-
-deriving via (CategoryInstance (Kleisli m) x)
-  instance Monad m => Functor (Kleisli m) (->) (Kleisli m x)
-
-deriving via (CategoryInstance (Kleisli m) `Dual` x)
-  instance Monad m => Functor (Dual (Kleisli m)) (->) (Kleisli m `Dual` x)
-
---------------------------------------------------------------------------------
-
-{-
-unwrapDualToDual 
-  :: forall (functor :: pbject -> qbject -> object)
-            (arrow :: object -> object -> *)
-            (a :: pbject)
-            (b :: pbject)
-            (c :: qbject)
-            (d :: qbject).
-  ( HasDual object, Birepresentational arrow )
-  => (Dual functor c a `arrow` Dual functor d b) `Coercion`
-         (functor a c `arrow` functor b d)
-unwrapDualToDual 
-  = (newtypeDual                   :: Dual arrow (functor b d) (functor a c) `Coercion` arrow (functor a c) (functor b d))
-  . (pmap newtypeDual              :: Dual arrow (Dual functor d b) (functor a c) `Coercion` Dual arrow (functor b d) (functor a c))
-  . (sym newtypeDual               :: arrow (functor a c) (Dual functor d b) `Coercion` Dual arrow (Dual functor d b) (functor a c))
-  . (parameter (fmap newtypeDual)  :: arrow (Dual functor c a) (Dual functor d b) `Coercion` arrow (functor a c) (Dual functor d b))
--}
