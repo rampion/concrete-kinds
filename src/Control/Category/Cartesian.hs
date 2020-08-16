@@ -33,12 +33,15 @@ import Control.Categorical.Bifunctor
 --import Data.Universal
 
 
+-- the bifunctor operator has an associativity law over the arrow
 class Bifunctor arrow arrow arrow bifunctor => Associative arrow bifunctor where
   -- law: bimap id associate . associate . bimap associate id = associate . associate
   -- law: bimap disassociate id . disassociate . bimap id disassociate = disassociate . disassociate
   associate :: ((a `bifunctor` b) `bifunctor` c) `arrow` (a `bifunctor` (b `bifunctor` c))
   disassociate :: (a `bifunctor` (b `bifunctor` c)) `arrow` ((a `bifunctor` b) `bifunctor` c)
 
+-- the bifunctor operator is symmetric over the arrow
+--
 -- polykinded version of Control.Categorical.Braided.Braided from categories
 class Associative arrow bifunctor => Braided arrow bifunctor where
   -- law: associate . braid . associate = second braid . associate . first braid
