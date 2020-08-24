@@ -45,5 +45,7 @@ instance (HasDual k, Flipped op ~ Dual op) => Flippable (Dual op :: i -> j -> k)
 instance Contravariant ((->) `Dual` x) where
   contramap f (Dual1 g) = Dual1 (g . f)
 
-instance Bifunctor bifunctor => Functor (bifunctor `Dual` x) where
-  fmap f (Dual1 mab) = Dual1 (first f mab)
+instance Bifunctor bifunctor => Bifunctor (Dual bifunctor) where
+  first g (Dual1 fxa) = Dual1 (second g fxa)
+  second g (Dual1 fax) = Dual1 (first g fax)
+  

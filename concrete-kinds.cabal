@@ -18,7 +18,6 @@ flag Development
 library
   exposed-modules:  Control.Categorical.Functor
                   , Control.Categorical.Bifunctor
-                  , Control.Categorical.Bifunctor_
                   , Control.Categorical.Profunctor
                   , Data.Dual
                   , Data.Universal

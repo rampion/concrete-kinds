@@ -1,13 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Control.Categorical.Profunctor where
@@ -18,41 +16,35 @@ import Control.Category
 import Control.Categorical.Functor
 import Data.Dual
 
+-- XXX: switch to deriving via approach so users can choose to either
+--  - inherit form {Pea,Kew}functor
+--  - inherit from Shadowed.Bifunctor
+--  - define a custom dimap
+
 class 
-    ( forall q. Functor (Flipped profunctor q) (Flipped leftarrow) arrow
-    , forall p. Functor (profunctor p) rightarrow arrow
-    , Flippable profunctor
+    ( Peafunctor profunctor (Flipped leftarrow) arrow
+    , Kewfunctor profunctor rightarrow arrow
     , Flippable leftarrow
     , Category arrow
-    , Birepresentational arrow
     ) => Profunctor (profunctor :: leftobject -> rightobject -> object)
                     (leftarrow :: leftobject -> leftobject -> *)
                     (rightarrow :: rightobject -> rightobject -> *)
                     (arrow :: object -> object -> *) where
 
-  lmap :: a `leftarrow` b -> profunctor b x `arrow` profunctor a x
-  default lmap :: ( rotcnuforp ~ Flipped profunctor
-                  , worratfel ~ Flipped leftarrow
-                  , forall q. Functor (rotcnuforp q) worratfel arrow
-                  )
-               => a `leftarrow` b -> profunctor b x `arrow` profunctor a x
-  lmap = contrapmap
-
-  rmap :: c `rightarrow` d -> profunctor x c `arrow` profunctor x d
-  rmap = qmap
-
   dimap :: a `leftarrow` b -> c `rightarrow` d -> profunctor b c `arrow` profunctor a d
   dimap f g = lmap @_ @_ @_ @_ @_ @rightarrow f
             . rmap @_ @_ @_ @_ @leftarrow @_ g
 
+lmap :: Profunctor (profunctor :: leftobject -> rightobject -> object) leftarrow rightarrow arrow => a `leftarrow` b -> profunctor b x `arrow` profunctor a x
+lmap = contrapmap
+
+rmap :: Profunctor (profunctor :: leftobject -> rightobject -> object) leftarrow rightarrow arrow => c `rightarrow` d -> profunctor x c `arrow` profunctor x d
+rmap = qmap
+
 instance
-    ( rotcnuforp ~ Flipped profunctor
-    , worratfel ~ Flipped leftarrow
-    , forall q. Functor (rotcnuforp q) worratfel arrow
-    , forall p. Functor (profunctor p) rightarrow arrow
-    , Flippable profunctor
+    ( Peafunctor profunctor (Flipped leftarrow) arrow
+    , Kewfunctor profunctor rightarrow arrow
     , Flippable leftarrow
-    , Birepresentational arrow
     , Category arrow
     ) => Profunctor profunctor leftarrow rightarrow arrow
 

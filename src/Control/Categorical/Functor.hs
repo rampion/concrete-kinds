@@ -19,11 +19,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- prevent GHC from complaining about Birepresentational
-{-# OPTIONS_GHC -Wno-simplifiable-class-constraints -fprint-potential-instances #-}
+-- {-# OPTIONS_GHC -Wno-simplifiable-class-constraints -fprint-potential-instances #-}
 module Control.Categorical.Functor  where
 
 import qualified Prelude as Shadowed
 import qualified Data.Functor.Contravariant as Shadowed
+import qualified Data.Bifunctor as Shadowed
 
 import Prelude hiding (id, (.), Functor(..))
 import Control.Arrow (Kleisli())
@@ -40,11 +41,13 @@ class (Category srcarrow, Category dstarrow) =>
                (dstarrow :: dstobject -> dstobject -> *) where
   fmap :: (a `srcarrow` b) -> (functor a `dstarrow` functor b)
 
+-- |
 -- [0] Instances of Prelude's Functor class are endofunctors from the category
 --     of types (->) to itself.
 instance Shadowed.Functor functor => Functor functor (->) (->) where
   fmap = Shadowed.fmap
 
+-- |
 -- [1]  Instances of Category, cat, each define two functors from cat to the
 --      category of types (->), (a `cat` _) and (_ `cat` b) (the hom functors).
 --
@@ -95,16 +98,68 @@ contramap = coerceWith (domain (sym newtypeFlipped)) fmap
 instance Shadowed.Contravariant functor => Functor functor (Dual (->)) (->) where
   fmap = coerceWith (domain newtypeDual) contramap
 
-class (Functor functor prrow (Universal arrow)) => Peafunctor functor prrow arrow where
-  pmap :: (a `prrow` b) -> (functor a x `arrow` functor b x)
-  pmap = getUniversal . fmap
+newtype Fixed op x a b = Fixed { getFixed :: a x `op` b x }
 
-instance (Functor functor prrow (Universal arrow)) => Peafunctor functor prrow arrow
+class (Category prrow, Category arrow) => Peafunctor functor prrow arrow where
+  pmap :: (a `prrow` b) -> (functor a x `arrow` functor b x)
+
+instance ( Peafunctor functor (Flipped prrow) arrow
+         , Category prrow
+         , Flippable prrow
+         ) => Peafunctor functor prrow (Dual arrow) where
+  pmap = coerceWith proof pmap where
+    proof :: Coercion
+       (Flipped prrow b a -> arrow (functor b x) (functor a x))
+       (prrow a b -> Dual arrow (functor a x) (functor b x))
+    proof = domain (sym newtypeFlipped) . codomain (sym newtypeDual)
+
+-- |
+-- if your type T has a Bifunctor instance, you can derive Peafunctor instances
+-- using the 'BifunctorInstance' wrapper
+
+newtype BifunctorInstance a b = BifunctorInstance { unBifunctorInstance :: a -> b }
+
+deriving via (->) instance Category BifunctorInstance
+
+instance Shadowed.Bifunctor bifunctor => Peafunctor bifunctor (->) BifunctorInstance where
+  pmap = coerceWith (codomain proof) Shadowed.first where
+    proof :: (a -> b) `Coercion` BifunctorInstance a b
+    proof = Coercion
+
+deriving via BifunctorInstance instance Peafunctor (,) (->) (->)
+deriving via BifunctorInstance instance Peafunctor Either (->) (->)
+
+newtype FlippedInstance arrow a b = FlippedInstance { unFlippedInstance :: a `arrow` b }
+
+newtypeFlippedInstance :: Coercion (FlippedInstance arrow a b) (arrow a b)
+newtypeFlippedInstance = Coercion
+
+-- deriving via (arrow :: _ -> _ -> *) instance Category (FlippedInstance arrow)
+instance Category arrow => Category (FlippedInstance arrow) where
+  id = coerceWith (sym newtypeFlippedInstance) id
+  (.) = coerceWith (
+          sym newtypeFlippedInstance `bidomain` sym newtypeFlippedInstance `bidomain`  newtypeFlippedInstance
+        ) (.)
+
+instance
+    -- rotcnuf is needed to prove to GHC that Flipped only depends on its first
+    -- parameter
+    ( rotcnuf ~ Flipped functor
+    , forall q. Functor (rotcnuf q) prrow arrow
+    , Flippable functor
+    , Birepresentational arrow
+    ) => Peafunctor functor prrow (FlippedInstance arrow) where
+  pmap f = coerceWith proof fmap f where
+    proof :: Coercion
+      (prrow b a -> arrow (rotcnuf q b) (rotcnuf q a))
+      (prrow b a -> FlippedInstance arrow (functor b q) (functor a q))
+    proof = codomain ((sym newtypeFlipped `bidomain` newtypeFlipped) . sym newtypeFlippedInstance)
+
+deriving via FlippedInstance (->) instance Peafunctor (->) (Dual (->)) (->)
 
 contrapmap :: (Peafunctor functor (Flipped prrow) arrow, Flippable prrow)
            => (a `prrow` b) -> functor b x `arrow` functor a x
 contrapmap = coerceWith (domain (sym newtypeFlipped)) pmap
-
 
 class (forall x. Functor (functor x) qrrow arrow) => Kewfunctor functor qrrow arrow where
   qmap :: c `qrrow` d -> functor x c `arrow` functor x d
@@ -135,10 +190,14 @@ class (forall x. Representational (op x)) => Kewrepresentational op where
 
 instance (forall x. Representational (op x)) => Kewrepresentational op
 
-
 -- Birepresentational functors are type constructors that have two parameters
 -- with representational roles
 type Birepresentational op = (Pearepresentational op, Kewrepresentational op)
+
+bidomain :: Birepresentational op => Coercion a b -> Coercion c d -> Coercion (b `op` c) (a `op` d)
+bidomain u v = domain u . codomain v
+
+infixr 0 `bidomain`
 
 -- [3] Representational functors are Functors
 instance
@@ -149,20 +208,10 @@ instance
 parameter :: a `Coercion` b -> a x `Coercion` b x
 parameter Coercion = Coercion
 
+-- TODO: remove/amend? that Birepresentations constraint is too much
 -- [4] Universality; Functors can drop extraneous parameters
-instance
-    -- rotcnuf is needed to prove to GHC that Flipped only depends on its first parameter
-    ( rotcnuf ~ Flipped functor
-    , forall q. Functor (rotcnuf q) prrow arrow
-    , Flippable functor
-    , Birepresentational arrow
-    ) => Functor functor prrow (Universal arrow) where
-
-  fmap f = Universal $ coerceWith proof fmap f where
-    proof :: Coercion
-      (prrow b a -> arrow (rotcnuf q b) (rotcnuf q a))
-      (prrow b a -> arrow (functor b q) (functor a q))
-    proof = codomain (domain (sym newtypeFlipped) . codomain newtypeFlipped)
+instance Peafunctor functor prrow arrow => Functor functor prrow (Universal arrow) where
+  fmap f = Universal (pmap f)
 
 -- [5] Duals; we can flip both arrows
 instance ( Functor functor (Flipped srcarrow) dstarrow

@@ -24,7 +24,6 @@ import qualified Prelude as Shadowed
 import Prelude hiding (id, (.), fst, snd, Functor, fmap)
 
 import Data.Void
-import Data.Tuple (swap)
 import Control.Category
 
 --import Control.Categorical.Functor
@@ -33,28 +32,12 @@ import Control.Categorical.Bifunctor
 --import Data.Universal
 
 
--- the bifunctor operator is symmetric over the arrow
---
--- polykinded version of Control.Categorical.Braided.Braided from categories
-class Associative arrow bifunctor => Braided arrow bifunctor where
-  -- law: associate . braid . associate = second braid . associate . first braid
-  -- law: disassociate . braid . disassociate = first braid . disassociate . second braid
-  -- law: idr . braid = idl
-  -- law: idl . braid = idr
-  -- law: braid . coidr = coidl
-  -- law: braid . coidl = coidr
-  braid :: bifunctor a b `arrow` bifunctor b a
-
 class Associative arrow bifunctor => Monoidal (arrow :: object -> object -> *) bifunctor where
   type Id arrow bifunctor :: object
   idl :: bifunctor (Id arrow bifunctor) a `arrow` a
   idr :: bifunctor a (Id arrow bifunctor) `arrow` a
   coidl :: a `arrow` bifunctor (Id arrow bifunctor) a 
   coidr :: a `arrow` bifunctor a (Id arrow bifunctor)
-
--- polykinded version of Control.Categorical.Braided.Symmetric from categories
-class Braided arrow bifunctor => Symmetric arrow bifunctor
-  -- law: swap . swap = id
 
 -- polykinded version of Control.Categorical.Cartesian.Cartesian from categories
 class ( Symmetric arrow (Product arrow)
@@ -103,9 +86,6 @@ class ( Symmetric arrow (Sum arrow)
 (+++) = bimap
 
 {-
-instance Associative arrow bifunctor => Associative (Dual arrow) bifunctor
-instance Braided arrow bifunctor => Braided (Dual arrow) bifunctor
-instance Symmetric arrow bifunctor => Symmetric (Dual arrow) bifunctor
 instance Monoidal arrow bifunctor => Monoidal (Dual arrow) bifunctor
 
 instance Cartesian arrow => CoCartesian (Dual arrow) where
@@ -128,15 +108,6 @@ class (Monoidal k (Sum k), Symmetric k (Sum k)) => CoCartesian k where
     f ||| g = codiag . bimap f g
 -}
 
-instance Associative (->) (,) where
-  associate ((a,b),c) = (a,(b,c))
-  disassociate (a,(b,c)) = ((a,b),c)
-
-instance Braided (->) (,) where
-  braid = swap
-
-instance Symmetric (->) (,) where
-
 instance Monoidal (->) (,) where
   type Id (->) (,) = ()
   idl = Shadowed.snd
@@ -150,14 +121,6 @@ instance Cartesian (->) where
   snd = Shadowed.snd
   (&&&) = (Shadowed.&&&)
 
-instance Associative (->) Either where
-  associate = (Left `either` (Right . Left)) `either` (Right . Right)
-  disassociate = (Left . Left) `either` ((Left . Right) `either` Right)
-
-instance Braided (->) Either where
-  braid = either Right Left
-
-instance Symmetric (->) Either
 
 instance Monoidal (->) Either where
   type Id (->) Either = Void
